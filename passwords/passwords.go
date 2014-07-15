@@ -3,11 +3,11 @@ package passwords
 
 import (
   "code.google.com/p/go.crypto/pbkdf2"
+  "crypto/hmac"
   "crypto/rand"
   "crypto/sha1"
   "encoding/base64"
   "io"
-  "reflect"
 )
 
 // Password is a one-way encryption of a password.
@@ -33,5 +33,5 @@ func (p Password) Verify(password string) bool {
     return false
   }
   gen := pbkdf2.Key([]byte(password), bytes[:8], 4096, 20, sha1.New)
-  return reflect.DeepEqual(gen, bytes[8:])
+  return hmac.Equal(gen, bytes[8:])
 }

@@ -2,6 +2,7 @@
 package kdf
 
 import (
+  "code.google.com/p/go.crypto/pbkdf2"
   "crypto/hmac"
   "crypto/rand"
   "crypto/sha256"
@@ -15,7 +16,7 @@ const (
 
 var (
   // Default salt
-  DefaultSalt = []byte{0x33, 0x2E, 0x31, 0x34, 0x31, 0x35, 0x39, 0x33}
+  DefaultSalt = []byte{0x31, 0x41, 0x59, 0x26, 0x53, 0x59, 0xAB, 0x24}
 )
 
 // NewHMAC creates a one way hash of plain performing reps repitition.
@@ -41,29 +42,15 @@ func VerifyHMAC(plain []byte, mac []byte, reps int) bool {
 // For a given plain text, salt, and reps, KDF will consistently produce
 // the same encryption key.
 func KDF(plain []byte, salt []byte, reps int) []byte {
-  mac := hmac.New(sha256.New, plain)
-  result := salt
-  var counter [4]byte
-  for i := 0; i < reps; i++ {
-    mac.Write(serializeint(i, counter[:]))
-    mac.Write(result)
-    result = mac.Sum(nil)
-    mac.Reset()
-  }
-  return result
+  return pbkdf2.Key(plain, salt, reps, 32, sha256.New)
 }
 
 // Random produces a random sequence of count bytes
 func Random(count int) []byte {
   result := make([]byte, count)
-  io.ReadFull(rand.Reader, result)
+  if _, err := io.ReadFull(rand.Reader, result); err != nil {
+    panic(err)
+  }
   return result
 }
-  
-func serializeint(i int, serial []byte) []byte {
-  serial[0] = byte((i >> 24) & 0xFF)
-  serial[1] = byte((i >> 16) & 0xFF)
-  serial[2] = byte((i >> 8) & 0xFF)
-  serial[3] = byte(i & 0xFF)
-  return serial
-}
+
