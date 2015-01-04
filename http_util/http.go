@@ -139,6 +139,52 @@ type SelectModel interface {
   ToSelection(s string) *Selection
 }
 
+// Choice represents a choice in a combo box.
+type Choice struct {
+  // What the user sees in the choice dialog
+  Name string
+  // The parameter value attached to this choice
+  Value interface{}
+}
+
+// ComboBox represents an immutable combo box of items.
+// ComboBox implements SelectModel.
+type ComboBox []Choice
+
+func (c ComboBox) ToSelection(s string) *Selection {
+  if idx, ok := c.toIdx(s); ok {
+    return &Selection{Name: c[idx].Name, Value: s}
+  }
+  return nil
+}
+
+// ToValue returns the value associated with the selected choice or nil
+// if none selected. s is the value from the form.
+func (c ComboBox) ToValue(s string) interface{} {
+  if idx, ok := c.toIdx(s); ok {
+    return c[idx].Value
+  }
+  return nil
+}
+
+// Items returns all the items in this combo box.
+func (c ComboBox) Items() []Selection {
+  result := make([]Selection, len(c))
+  for i := range c {
+    result[i] = Selection{Name: c[i].Name, Value: strconv.Itoa(i + 1)}
+  }
+  return result
+}
+
+func (c ComboBox) toIdx(s string) (int, bool) {
+  oneIdx, _ := strconv.Atoi(s)
+  idx := oneIdx - 1
+  if idx < 0 || idx >= len(c) {
+    return 0, false
+  }
+  return idx, true
+}
+
 // Values is a wrapper around url.Values providing additional methods.
 type Values struct {
   url.Values
