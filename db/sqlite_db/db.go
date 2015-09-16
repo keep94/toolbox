@@ -4,10 +4,12 @@ package sqlite_db
 import (
   "code.google.com/p/gosqlite/sqlite"
   "errors"
+  "fmt"
   "github.com/keep94/appcommon/date_util"
   "github.com/keep94/appcommon/db"
   "github.com/keep94/gofunctional3/consume"
   "github.com/keep94/gofunctional3/functional"
+  "hash/fnv"
   "time"
 )
 
@@ -336,10 +338,33 @@ type rowStream struct {
 }
 
 func (s *rowStream) Next(ptr interface{}) error {
-  s.row.Pair(ptr)
+  etagger, isEtagger := ptr.(db.Etagger)
+  if isEtagger {
+    s.row.Pair(etagger.GetPtr())
+  } else {
+    s.row.Pair(ptr)
+  }
   err := s.Stream.Next(s.row)
   if err != nil {
     return err
   }
+  if isEtagger {
+    writeRow := s.row.(RowForWriting)
+    etag, err := computeEtag(writeRow.Values())
+    if err != nil {
+      return err
+    }
+    etagger.SetEtag(etag)
+  }
   return s.row.Unmarshall()
+}
+
+func computeEtag(values interface{}) (uint64, error) {
+  h := fnv.New64a()
+  s := fmt.Sprintf("%v", values)
+  _, err := h.Write(([]byte)(s))
+  if err != nil {
+    return 0, err
+  }
+  return h.Sum64(), nil
 }
