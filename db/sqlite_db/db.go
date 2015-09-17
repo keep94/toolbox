@@ -168,7 +168,12 @@ func UpdateValues(row RowForWriting, ptr interface{}) (
   return
 }
 
-// ReadRows returns table rows as a Stream of business objects.
+// ReadRows returns table rows as a Stream of business objects
+// or of db.Etagger instances (for collecting the etags of the
+// business objects) depending on what the caller passes to
+// the Next method of the returned stream.
+// row must also implement RowForWriting if caller treats returned stream
+// as a stream of db.Etagger instances.
 // Caller must explicitly call Finalize on stmt when finished
 // with returned Stream. Calling Close on returned Stream does
 // nothing.
@@ -177,7 +182,9 @@ func ReadRows(row RowForReading, stmt *sqlite.Stmt) functional.Stream {
   return &rowStream{Stream: stream, row: row}
 }
 
-// ReadSingle executes sql and reads a single row into business object at ptr.
+// ReadSingle executes sql and reads a single row into the business object 
+// or db.Etagger instance at ptr. For the latter case, row must also
+// implement RowForWriting
 func ReadSingle(
     conn *sqlite.Conn,
     row RowForReading,
@@ -196,6 +203,8 @@ func ReadSingle(
 }
 
 // ReadMultiple executes sql and reads multiple rows.
+// consumer may consume either business objects or db.Etagger objects.
+// For the latter case, row must also implement RowForWriting
 func ReadMultiple(
     conn *sqlite.Conn,
     row RowForReading,
