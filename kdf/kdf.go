@@ -2,10 +2,10 @@
 package kdf
 
 import (
-  "code.google.com/p/go.crypto/pbkdf2"
   "crypto/hmac"
   "crypto/rand"
   "crypto/sha256"
+  "golang.org/x/crypto/pbkdf2"
   "io"
 )
   

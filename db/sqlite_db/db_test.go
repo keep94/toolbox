@@ -1,9 +1,9 @@
 package sqlite_db
 
 import (
-  "code.google.com/p/gosqlite/sqlite"
   "errors"
   "fmt"
+  "github.com/keep94/gosqlite/sqlite"
   "sync"
   "testing"
 )

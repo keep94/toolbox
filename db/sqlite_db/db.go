@@ -2,13 +2,13 @@
 package sqlite_db
 
 import (
-  "code.google.com/p/gosqlite/sqlite"
   "errors"
   "fmt"
   "github.com/keep94/appcommon/date_util"
   "github.com/keep94/appcommon/db"
   "github.com/keep94/gofunctional3/consume"
   "github.com/keep94/gofunctional3/functional"
+  "github.com/keep94/gosqlite/sqlite"
   "hash/fnv"
   "time"
 )

@@ -2,11 +2,11 @@
 package passwords
 
 import (
-  "code.google.com/p/go.crypto/pbkdf2"
   "crypto/hmac"
   "crypto/rand"
   "crypto/sha1"
   "encoding/base64"
+  "golang.org/x/crypto/pbkdf2"
   "io"
 )
 
