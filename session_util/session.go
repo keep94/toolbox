@@ -3,9 +3,17 @@
 package session_util
 
 import (
+  "crypto/hmac"
+  "crypto/sha256"
+  "encoding/base32"
+  "fmt"
   "github.com/gorilla/context"
   "github.com/gorilla/sessions"
+  "github.com/keep94/appcommon/kdf"
   "net/http"
+  "strconv"
+  "strings"
+  "time"
 )
 
 // UserIdSession augments a gorilla session by supporting the storing and
@@ -24,21 +32,94 @@ func (s UserIdSession) UserId() (int64, bool) {
   return result.(int64), true
 }
 
-// SetUserId sets the user ID in this session.
+// SetUserId sets the user ID in this session and generates a new xsrf secret
+// for creating xsrf tokens.
 func (s UserIdSession) SetUserId(id int64) {
   s.S.Values[kUserIdKey] = id
+  s.setXsrfSecret(kdf.Random(64))
 }
 
-// ClearUserId clears the user ID in this session.
+// ClearUserId clears the user ID in this session and clears any xsrf secret.
 func (s UserIdSession) ClearUserId() {
   delete(s.S.Values, kUserIdKey)
+  s.clearXsrfSecret()
 }
 
-// ClearAll clears all data from this session.
+// ClearAll clears all data from this session including any xsrf secret.
 func (s UserIdSession) ClearAll() {
   for key := range s.S.Values {
     delete(s.S.Values, key)
   }
+}
+
+// NewXsrfToken creates a new xsrf token.
+// action identifies the web page; expire is when the token expires.
+// NewXsrfToken panics if userId is not set.
+func (s UserIdSession) NewXsrfToken(action string, expire time.Time) string {
+  userId, ok := s.UserId()
+  if !ok {
+    panic("No userId.")
+  }
+  secret, ok := s.xsrfSecret()
+  if !ok {
+    panic("No secret.")
+  }
+  expireUnix := expire.Unix()
+  mac := hmac.New(sha256.New, secret)
+  message := fmt.Sprintf("%d_%d_%s", expireUnix, userId, action)
+  mac.Write(([]byte)(message))
+  checksum := strings.TrimRight(
+      base32.StdEncoding.EncodeToString(mac.Sum(nil)), "=")
+  return fmt.Sprintf("%d:%s", expireUnix, checksum)
+}
+
+// VerifyXsrfToken returns true if token is valid or false otherwise.
+// action identifies the web page; now is the current time.
+// If no userId is set, VerifyXsrfToken returns false.
+func (s UserIdSession) VerifyXsrfToken(
+    tokenToBeVerified, action string, now time.Time) bool {
+  idx := strings.IndexByte(tokenToBeVerified, ':')
+  if idx == -1 {
+    return false
+  }
+  expireUnix, err := strconv.ParseInt(tokenToBeVerified[:idx], 10, 64)
+  if err != nil {
+    return false
+  }
+  if now.Unix() >= expireUnix {
+    return false
+  }
+  userId, ok := s.UserId()
+  if !ok {
+    return false
+  }
+  secret, ok := s.xsrfSecret()
+  if !ok {
+    return false
+  }
+  expectedChecksum := tokenToBeVerified[idx+1:]
+  mac := hmac.New(sha256.New, secret)
+  message := fmt.Sprintf("%d_%d_%s", expireUnix, userId, action)
+  mac.Write(([]byte)(message))
+  checksum := strings.TrimRight(
+      base32.StdEncoding.EncodeToString(mac.Sum(nil)), "=")
+  return hmac.Equal(([]byte)(expectedChecksum), ([]byte)(checksum))
+}
+
+func (s UserIdSession) xsrfSecret() ([]byte, bool) {
+  result, ok := s.S.Values[kXsrfSecretKey]
+  if !ok {
+    return nil, false
+  }
+  return result.([]byte), true
+}
+
+func (s UserIdSession) setXsrfSecret(secret []byte) {
+  s.S.Values[kXsrfSecretKey] = secret
+}
+
+func (s UserIdSession) clearXsrfSecret() {
+  delete(s.S.Values, kXsrfSecretKey)
 }
 
 type UserGetter interface {
@@ -103,6 +184,7 @@ type sessionKeyType int
 
 const (
   kUserIdKey sessionKeyType = iota
+  kXsrfSecretKey
 )
 
 type contextKeyType int

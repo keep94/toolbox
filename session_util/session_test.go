@@ -8,7 +8,9 @@ import (
   "github.com/gorilla/sessions"
   "github.com/keep94/ramstore"
   "net/http"
+  "strconv"
   "testing"
+  "time"
 )
 
 const (
@@ -18,9 +20,120 @@ const (
 )
 
 var (
+  kNow = time.Date(2016, 5, 24, 17, 13, 0, 0, time.UTC)
+)
+
+var (
   errNoSuchId = errors.New("session_util_test: no such id.")
   errDb = errors.New("session_util_test: A database error happened.")
 )
+
+func TestXsrfToken(t *testing.T) {
+    s := session_util.UserIdSession{&sessions.Session{Values: make(map[interface{}]interface{})}}
+    s.SetUserId(kUserId)
+    xsrfToken := s.NewXsrfToken("MyPage", kNow.Add(15 * time.Minute))
+    if !s.VerifyXsrfToken(xsrfToken, "MyPage", kNow.Add(14 * time.Minute)) {
+      t.Error("Expected token to verify")
+    }
+    if s.VerifyXsrfToken(
+            xsrfToken, "AnotherPage", kNow.Add(14 * time.Minute)) {
+      t.Error("Expected token not to verify. Wrong page")
+    }
+    if s.VerifyXsrfToken(xsrfToken, "MyPage", kNow.Add(15 * time.Minute)) {
+      t.Error("Expected token not to verify. Time expired")
+    }
+}
+
+func TestXsrfTokenUserLogsOut(t *testing.T) {
+    s := session_util.UserIdSession{&sessions.Session{Values: make(map[interface{}]interface{})}}
+    s.SetUserId(kUserId)
+    xsrfToken := s.NewXsrfToken("MyPage", kNow.Add(15 * time.Minute))
+    if !s.VerifyXsrfToken(xsrfToken, "MyPage", kNow) {
+      t.Error("Expected token to verify")
+    }
+    s.ClearUserId()
+    if s.VerifyXsrfToken(xsrfToken, "MyPage", kNow) {
+      t.Error("Expected token not to verify. User logged out.")
+    }
+    s.SetUserId(kUserId)
+    if s.VerifyXsrfToken(xsrfToken, "MyPage", kNow) {
+      t.Error("Expected token not to verify. Secret should have changed.")
+    }
+}
+
+func TestXsrfTokenClearAll(t *testing.T) {
+    s := session_util.UserIdSession{&sessions.Session{Values: make(map[interface{}]interface{})}}
+    s.SetUserId(kUserId)
+    xsrfToken := s.NewXsrfToken("MyPage", kNow.Add(15 * time.Minute))
+    if !s.VerifyXsrfToken(xsrfToken, "MyPage", kNow) {
+      t.Error("Expected token to verify")
+    }
+    s.ClearAll()
+    if s.VerifyXsrfToken(xsrfToken, "MyPage", kNow) {
+      t.Error("Expected token not to verify. Session cleared")
+    }
+    s.SetUserId(kUserId)
+    if s.VerifyXsrfToken(xsrfToken, "MyPage", kNow) {
+      t.Error("Expected token not to verify. Secret should have changed.")
+    }
+}
+
+func TestXsrfTokenNewUser(t *testing.T) {
+    s := session_util.UserIdSession{&sessions.Session{Values: make(map[interface{}]interface{})}}
+    s.SetUserId(kUserId)
+    xsrfToken := s.NewXsrfToken("MyPage", kNow.Add(15 * time.Minute))
+    if !s.VerifyXsrfToken(xsrfToken, "MyPage", kNow) {
+      t.Error("Expected token to verify")
+    }
+    s.SetUserId(kUserId + 1)
+    if s.VerifyXsrfToken(xsrfToken, "MyPage", kNow) {
+      t.Error("Expected token not to verify. Different user.")
+    }
+    s.SetUserId(kUserId)
+    if s.VerifyXsrfToken(xsrfToken, "MyPage", kNow) {
+      t.Error("Expected token not to verify. Secret should have changed.")
+    }
+}
+
+func TestXsrfTokenHack(t *testing.T) {
+    s := session_util.UserIdSession{&sessions.Session{Values: make(map[interface{}]interface{})}}
+    s.SetUserId(kUserId)
+    xsrfToken := s.NewXsrfToken("MyPage", kNow.Add(15 * time.Minute))
+    if !s.VerifyXsrfToken(xsrfToken, "MyPage", kNow) {
+      t.Error("Expected token to verify")
+    }
+    if xsrfToken[10] != ':' {
+      t.Error("Expected field dlimiter in xsrf token")
+    }
+    xsrfExpire := xsrfToken[:10]
+    xsrfChecksum := xsrfToken[11:]
+    if s.VerifyXsrfToken("", "MyPage", kNow) {
+      t.Error("Missing token should not verify.")
+    }
+    if s.VerifyXsrfToken("garbage", "MyPage", kNow) {
+      t.Error("garbage token should not verify.")
+    }
+    if s.VerifyXsrfToken("garbage:with_field_delimiter", "MyPage", kNow) {
+      t.Error("garbage with field delimiter token should not verify.")
+    }
+    if s.VerifyXsrfToken(
+        xsrfExpire + ":garbage_checksum", "MyPage", kNow) {
+        t.Error("token with garbage checksum should not verify.")
+    }
+    // Add one to expire in token but leave checksum the same.
+    expire, err := strconv.Atoi(xsrfExpire)
+    if err != nil {
+        t.Errorf("Error happened parsing timestamp %v", err)
+    }
+    regularToken := fmt.Sprintf("%d:%s", expire, xsrfChecksum)
+    hackedToken := fmt.Sprintf("%d:%s", expire + 1, xsrfChecksum)
+    if !s.VerifyXsrfToken(regularToken, "MyPage", kNow) {
+      t.Error("Expected regular token to verify")
+    }
+    if s.VerifyXsrfToken(hackedToken, "MyPage", kNow) {
+      t.Error("Expected hacked token not to verify")
+    }
+}
 
 func TestSessionUserId(t *testing.T) {
   s := session_util.UserIdSession{&sessions.Session{Values: make(map[interface{}]interface{})}}
