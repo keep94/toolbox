@@ -45,6 +45,26 @@ func (s UserIdSession) ClearUserId() {
   s.clearXsrfSecret()
 }
 
+// LastLogin returns the last login time and true if stored in this session;
+// otherwise it returns the zero time and false.
+func (s UserIdSession) LastLogin() (time.Time, bool) {
+  result, ok := s.S.Values[kLastLoginKey]
+  if !ok {
+    return time.Time{}, false
+  }
+  return result.(time.Time), true
+}
+
+// SetLastLogin sets the last login time in this session.
+func (s UserIdSession) SetLastLogin(lastLogin time.Time) {
+  s.S.Values[kLastLoginKey] = lastLogin
+}
+
+// ClearLastLogin clears the last login time in this session.
+func (s UserIdSession) ClearLastLogin() {
+  delete(s.S.Values, kLastLoginKey)
+}
+
 // ClearAll clears all data from this session including any xsrf secret.
 func (s UserIdSession) ClearAll() {
   for key := range s.S.Values {
@@ -185,6 +205,7 @@ type sessionKeyType int
 const (
   kUserIdKey sessionKeyType = iota
   kXsrfSecretKey
+  kLastLoginKey
 )
 
 type contextKeyType int

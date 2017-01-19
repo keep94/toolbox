@@ -138,6 +138,7 @@ func TestXsrfTokenHack(t *testing.T) {
 func TestSessionUserId(t *testing.T) {
   s := session_util.UserIdSession{&sessions.Session{Values: make(map[interface{}]interface{})}}
   s.SetUserId(kUserId)
+  s.SetLastLogin(kNow)
   id, ok := s.UserId()
   if !ok {
     t.Error("Expected a UserId")
@@ -145,11 +146,27 @@ func TestSessionUserId(t *testing.T) {
   if id != kUserId {
     t.Errorf("Expected %d, got %d", kUserId, id)
   }
+
   s.ClearUserId()
   id, ok = s.UserId()
   if ok {
     t.Error("Did not expect a user Id.")
   }
+
+  lastLogin, ok := s.LastLogin()
+  if !ok {
+    t.Error("Expected a last login")
+  }
+  if lastLogin != kNow {
+    t.Errorf("Expected %v, got %v", kNow, lastLogin)
+  }
+
+  s.ClearLastLogin()
+  _, ok = s.LastLogin()
+  if ok {
+    t.Error("Did not expect a last login.")
+  }
+
 }
 
 func TestSessionClearAll(t *testing.T) {
