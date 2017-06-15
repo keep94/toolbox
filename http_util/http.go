@@ -185,6 +185,18 @@ func (c ComboBox) toIdx(s string) (int, bool) {
   return idx, true
 }
 
+// Selections implements SelectModel
+type Selections []Selection
+
+func (s Selections) ToSelection(str string) *Selection {
+  for _, sel := range s {
+    if str == sel.Value {
+      return &sel
+    }
+  }
+  return nil
+}
+
 // Values is a wrapper around url.Values providing additional methods.
 type Values struct {
   url.Values
