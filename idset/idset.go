@@ -1,3 +1,4 @@
+// Package idset handles comma separated list of int64.
 package idset
 
 import (
