@@ -3,16 +3,12 @@
 package sqlite_rw
 
 import (
-  "errors"
   "fmt"
   "hash/fnv"
 
+  "github.com/keep94/appcommon/db/sqlite_db"
   "github.com/keep94/goconsume"
   "github.com/keep94/gosqlite/sqlite"
-)
-
-const (
-  LastRowIdSQL = "select last_insert_rowid()"
 )
 
 // RowForReading reads a database row into its business object.
@@ -152,7 +148,7 @@ func AddRow(
   if err = conn.Exec(sql, values...); err != nil {
     return err
   }
-  *rowId, err = LastRowId(conn)
+  *rowId, err = sqlite_db.LastRowId(conn)
   return err
 }
 
@@ -166,30 +162,6 @@ func UpdateRow(
     return err
   }
   return conn.Exec(sql, values...)
-}
-
-// LastRowId fetches the id of last inserted row.
-func LastRowId(conn *sqlite.Conn) (id int64, err error) {
-  stmt, err := conn.Prepare(LastRowIdSQL)
-  if err != nil {
-    return
-  }
-  defer stmt.Finalize()
-  return LastRowIdFromStmt(stmt)
-}
-
-// LastRowIdFromStmt fetches the last inserted row id. stmt must be
-// created from LastRowIdSQL.
-func LastRowIdFromStmt(stmt *sqlite.Stmt) (id int64, err error) {
-  if err = stmt.Exec(); err != nil {
-    return
-  }
-  if !stmt.Next() {
-    err = errors.New("sqlite_db2: Could not fetch inserted row id")
-    return
-  }
-  err = stmt.Scan(&id)
-  return
 }
 
 // UpdateValues returns the values of the SQL columns to update row
