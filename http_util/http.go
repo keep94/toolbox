@@ -85,6 +85,33 @@ func AppendParams(u *url.URL, nameValues ...string) *url.URL {
   return &result
 }
 
+// PageBreadCrumb is used for displaying the page breadcrumb
+type PageBreadCrumb struct {
+  // the currennt URL
+  URL *url.URL
+  // The page number URL parameter name
+  PageNoParam string
+  // The zero based page number
+  PageNo int
+  // Whether or not we are at last page.
+  End bool
+}
+
+// DisplayPageNo returns the 1-based page number.
+func (p *PageBreadCrumb) DisplayPageNo() int {
+  return p.PageNo + 1
+}
+
+// NextPageLink returns the URL for the next page.
+func (p *PageBreadCrumb) NextPageLink() *url.URL {
+  return WithParams(p.URL, p.PageNoParam, strconv.Itoa(p.PageNo + 1))
+}
+
+// PrevPageLink returns the URL for the previous page.
+func (p *PageBreadCrumb) PrevPageLink() *url.URL {
+  return WithParams(p.URL, p.PageNoParam, strconv.Itoa(p.PageNo - 1))
+}
+
 // Pager simplifies displaying data in a PageBuffer using go templates.
 type Pager struct {
   // The PageBuffer
