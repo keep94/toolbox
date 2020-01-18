@@ -3,13 +3,9 @@ package sqlite_db
 
 import (
   "errors"
-  "fmt"
   "github.com/keep94/appcommon/date_util"
   "github.com/keep94/appcommon/db"
-  "github.com/keep94/gofunctional3/consume"
-  "github.com/keep94/gofunctional3/functional"
   "github.com/keep94/gosqlite/sqlite"
-  "hash/fnv"
   "time"
 )
 
@@ -24,40 +20,6 @@ var (
 
 // Action represents some action against a sqlite database
 type Action func(conn *sqlite.Conn) error
-
-// RowForReading represents a table row with ID column for reading.
-type RowForReading interface {
-  functional.Tuple
-  // Pair pairs this value with a business object. ptr points to the business
-  // object.
-  Pair(ptr interface{})
-  // Unmarshall populates associated business object.
-  Unmarshall() error
-}
-
-// RowForWriting represents a table row with ID column that is being written.
-type RowForWriting interface {
-  // Values returns columns in row with Id column last.
-  Values() []interface{}
-  // Pair pairs this value with a business object. ptr points to the business
-  // object.
-  Pair(ptr interface{})
-  // Marshall populates columns from associated business object.
-  Marshall() error
-}
-  
-// SimpleRow provides empty Marshall / Unmarshall for implementations of
-// RowForReading and RowForWriting
-type SimpleRow struct {
-}
-
-func (s SimpleRow) Marshall() error {
-  return nil
-}
-
-func (s SimpleRow) Unmarshall() error {
-  return nil
-}
 
 // Db wraps a sqlite database connection.
 // With Db, multiple threads can safely share the same connection.
@@ -149,112 +111,6 @@ func LastRowIdFromStmt(stmt *sqlite.Stmt) (id int64, err error) {
   return
 }
 
-// InsertValues returns the values needed to insert a row in a table.
-// row is the table row; ptr points to the business object to insert.
-func InsertValues(row RowForWriting, ptr interface{}) (
-    values []interface{}, err error) {
-  values, err = UpdateValues(row, ptr)
-  values = values[:len(values) - 1]
-  return
-}
-
-// UpdateValues returns the values needed to update a row in a table.
-// row is the table row; ptr points to the business object to update.
-func UpdateValues(row RowForWriting, ptr interface{}) (
-    values []interface{}, err error) {
-  row.Pair(ptr)
-  err = row.Marshall()
-  values = row.Values()
-  return
-}
-
-// ReadRows returns table rows as a Stream of business objects
-// or of db.Etagger instances (for collecting the etags of the
-// business objects) depending on what the caller passes to
-// the Next method of the returned stream.
-// row must also implement RowForWriting if caller treats returned stream
-// as a stream of db.Etagger instances.
-// Caller must explicitly call Finalize on stmt when finished
-// with returned Stream. Calling Close on returned Stream does
-// nothing.
-func ReadRows(row RowForReading, stmt *sqlite.Stmt) functional.Stream {
-  stream := functional.ReadRows(stmt)
-  return &rowStream{Stream: stream, row: row}
-}
-
-// ReadSingle executes sql and reads a single row into the business object 
-// or db.Etagger instance at ptr. For the latter case, row must also
-// implement RowForWriting
-func ReadSingle(
-    conn *sqlite.Conn,
-    row RowForReading,
-    noSuchRow error,
-    ptr interface{},
-    sql string,
-    params ...interface{}) error {
-  return ReadMultiple(
-      conn,
-      row,
-      functional.ConsumerFunc(func(s functional.Stream) error {
-        return consume.FirstOnly(s, noSuchRow, ptr)
-      }),
-      sql,
-      params...)
-}
-
-// ReadMultiple executes sql and reads multiple rows.
-// consumer may consume either business objects or db.Etagger objects.
-// For the latter case, row must also implement RowForWriting
-func ReadMultiple(
-    conn *sqlite.Conn,
-    row RowForReading,
-    consumer functional.Consumer,
-    sql string,
-    params ...interface{}) error {
-  stmt, err := conn.Prepare(sql)
-  if err != nil {
-    return err
-  }
-  defer stmt.Finalize()
-  if err = stmt.Exec(params...); err != nil {
-    return err
-  }
-  return consumer.Consume(ReadRows(row, stmt))
-}
-
-// AddRow adds a new row. row being added must have auto increment id field.
-// ptr points to the business object being added.
-func AddRow(
-    conn *sqlite.Conn,
-    row RowForWriting,
-    ptr interface{},
-    rowId *int64,
-    sql string) error {
-  values, err := InsertValues(row, ptr)
-  if err != nil {
-    return err
-  }
-  if err = conn.Exec(sql, values...); err != nil {
-    return err
-  }
-  *rowId, err = LastRowId(conn)
-  return err
-}
-
-// UpdateRow updates a row. ptr points to the business object being updated.
-// sql must be of form "update table_name set ... where id = ?"
-func UpdateRow(
-    conn *sqlite.Conn,
-    row RowForWriting,
-    ptr interface{},
-    sql string) error {
-  values, err := UpdateValues(row, ptr)
-  if err != nil {
-    return err
-  }
-  return conn.Exec(sql, values...)
-}
-
 // DateToString converts a date to YYYYmmdd
 func DateToString(t time.Time) string {
   return t.Format(date_util.YMDFormat)
@@ -339,41 +195,4 @@ func (w realConnWrapper) rollback() error {
 
 func (w realConnWrapper) delegate() *sqlite.Conn {
   return w.Conn
-}
-
-type rowStream struct {
-  functional.Stream
-  row RowForReading
-}
-
-func (s *rowStream) Next(ptr interface{}) error {
-  etagger, isEtagger := ptr.(db.Etagger)
-  if isEtagger {
-    s.row.Pair(etagger.GetPtr())
-  } else {
-    s.row.Pair(ptr)
-  }
-  err := s.Stream.Next(s.row)
-  if err != nil {
-    return err
-  }
-  if isEtagger {
-    writeRow := s.row.(RowForWriting)
-    etag, err := computeEtag(writeRow.Values())
-    if err != nil {
-      return err
-    }
-    etagger.SetEtag(etag)
-  }
-  return s.row.Unmarshall()
-}
-
-func computeEtag(values interface{}) (uint64, error) {
-  h := fnv.New64a()
-  s := fmt.Sprintf("%v", values)
-  _, err := h.Write(([]byte)(s))
-  if err != nil {
-    return 0, err
-  }
-  return h.Sum64(), nil
 }

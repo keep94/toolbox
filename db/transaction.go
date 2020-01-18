@@ -17,13 +17,3 @@ type Action func(t Transaction) error
 type Doer interface {
   Do(action Action) error
 }
-
-// Etagger collects the etag of a value read from the database
-type Etagger interface {
-
-  // GetPtr returns the pointer to where read value is stored.
-  GetPtr() interface{}
-
-  // Database code calls SetEtag to record etag of read value
-  SetEtag(etag uint64)
-}
