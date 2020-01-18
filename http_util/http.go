@@ -4,7 +4,6 @@ package http_util
 import (
   "bytes"
   "fmt"
-  "github.com/keep94/gofunctional3/consume"
   "html/template"
   "io"
   "log"
@@ -110,31 +109,6 @@ func (p *PageBreadCrumb) NextPageLink() *url.URL {
 // PrevPageLink returns the URL for the previous page.
 func (p *PageBreadCrumb) PrevPageLink() *url.URL {
   return WithParams(p.URL, p.PageNoParam, strconv.Itoa(p.PageNo - 1))
-}
-
-// Pager simplifies displaying data in a PageBuffer using go templates.
-type Pager struct {
-  // The PageBuffer
-  *consume.PageBuffer
-  // The current URL
-  URL *url.URL
-  // The page number URL parameter name
-  PageNoParam string
-}
-
-// DisplayPageNo returns the 1-based page number.
-func (p *Pager) DisplayPageNo() int {
-  return p.PageNo() + 1
-}
-
-// NextPageLink returns the URL for the next page.
-func (p *Pager) NextPageLink() *url.URL {
-  return WithParams(p.URL, p.PageNoParam, strconv.Itoa(p.PageNo() + 1))
-}
-
-// PrevPageLink returns the URL for the previous page.
-func (p *Pager) PrevPageLink() *url.URL {
-  return WithParams(p.URL, p.PageNoParam, strconv.Itoa(p.PageNo() - 1))
 }
 
 // WriteTemplate writes a template. v is the values for the template.
