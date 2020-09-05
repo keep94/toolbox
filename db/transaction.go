@@ -12,8 +12,8 @@ type Transaction interface{}
 type Action func(t Transaction) error
 
 // Doer performs an action within a single transaction. Each implementation
-// specific database package underneath this package has a NewDoer method 
+// specific database package underneath this package has a NewDoer method
 // that creates an instance of this interface for that implementation.
 type Doer interface {
-  Do(action Action) error
+	Do(action Action) error
 }
