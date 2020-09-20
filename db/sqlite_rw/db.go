@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"hash/fnv"
 
-	"github.com/keep94/appcommon/db/sqlite_db"
 	"github.com/keep94/goconsume"
 	"github.com/keep94/gosqlite/sqlite"
+	"github.com/keep94/toolbox/db/sqlite_db"
 )
 
 // RowForReading reads a database row into its business object.

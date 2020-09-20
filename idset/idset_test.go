@@ -1,7 +1,7 @@
 package idset_test
 
 import (
-	"github.com/keep94/appcommon/idset"
+	"github.com/keep94/toolbox/idset"
 	"testing"
 )
 

@@ -1,7 +1,7 @@
 package date_util_test
 
 import (
-	"github.com/keep94/appcommon/date_util"
+	"github.com/keep94/toolbox/date_util"
 	"testing"
 	"time"
 )

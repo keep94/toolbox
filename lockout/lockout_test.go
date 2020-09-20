@@ -1,7 +1,7 @@
 package lockout_test
 
 import (
-	"github.com/keep94/appcommon/lockout"
+	"github.com/keep94/toolbox/lockout"
 	"testing"
 )
 

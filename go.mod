@@ -1,4 +1,4 @@
-module github.com/keep94/appcommon
+module github.com/keep94/toolbox
 
 go 1.14
 

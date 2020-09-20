@@ -2,7 +2,7 @@ package kdf_test
 
 import (
 	"crypto/hmac"
-	"github.com/keep94/appcommon/kdf"
+	"github.com/keep94/toolbox/kdf"
 	"testing"
 )
 

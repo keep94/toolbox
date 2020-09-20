@@ -2,9 +2,9 @@ package sqlite_rw_test
 
 import (
 	"errors"
-	"github.com/keep94/appcommon/db/sqlite_rw"
 	"github.com/keep94/goconsume"
 	"github.com/keep94/gosqlite/sqlite"
+	"github.com/keep94/toolbox/db/sqlite_rw"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
