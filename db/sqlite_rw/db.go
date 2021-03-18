@@ -1,12 +1,12 @@
 // Package sqlite_rw reads and updates sqlite databases using consumers
-// from the github.com/keep94/goconsume package.
+// from the github.com/keep94/consume package.
 package sqlite_rw
 
 import (
 	"fmt"
 	"hash/fnv"
 
-	"github.com/keep94/goconsume"
+	"github.com/keep94/consume"
 	"github.com/keep94/gosqlite/sqlite"
 	"github.com/keep94/toolbox/db/sqlite_db"
 )
@@ -102,7 +102,7 @@ func FirstOnly(
 func ReadRows(
 	row RowForReading,
 	stmt *sqlite.Stmt,
-	consumer goconsume.Consumer) error {
+	consumer consume.Consumer) error {
 	ptrs := row.Ptrs()
 	for stmt.Next() && consumer.CanConsume() {
 		if err := readRow(row, stmt, ptrs); err != nil {
@@ -119,7 +119,7 @@ func ReadRows(
 func ReadMultiple(
 	conn *sqlite.Conn,
 	row RowForReading,
-	consumer goconsume.Consumer,
+	consumer consume.Consumer,
 	sql string,
 	params ...interface{}) error {
 	stmt, err := conn.Prepare(sql)

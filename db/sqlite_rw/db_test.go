@@ -2,7 +2,7 @@ package sqlite_rw_test
 
 import (
 	"errors"
-	"github.com/keep94/goconsume"
+	"github.com/keep94/consume"
 	"github.com/keep94/gosqlite/sqlite"
 	"github.com/keep94/toolbox/db/sqlite_rw"
 	"github.com/stretchr/testify/assert"
@@ -48,7 +48,7 @@ func TestDatabase(t *testing.T) {
 	assert.Nil(sqlite_rw.ReadMultiple(
 		conn,
 		(&rawRecord{}).init(&Record{}),
-		goconsume.AppendTo(&records),
+		consume.AppendTo(&records),
 		"select id, name, phone from records where name = ? order by id asc", "a"))
 
 	assert.Equal(int64(1), records[0].Id)
@@ -116,7 +116,7 @@ func TestDatabase(t *testing.T) {
 	assert.NotNil(sqlite_rw.ReadMultiple(
 		conn,
 		(&errorRecord{}).init(&Record{}),
-		goconsume.AppendTo(&records),
+		consume.AppendTo(&records),
 		"select id, name, phone from records"))
 
 	assert.NotNil(sqlite_rw.AddRow(
