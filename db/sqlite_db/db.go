@@ -45,7 +45,6 @@ func (d *Db) Do(action Action) error {
 	case d.requestCh <- action:
 		return <-d.responseCh
 	}
-	return nil
 }
 
 // Close closes the underlying connection.
