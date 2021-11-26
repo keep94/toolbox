@@ -47,10 +47,11 @@ func TestDatabase(t *testing.T) {
 
 	assert.Nil(sqlite_rw.ReadMultiple(
 		conn,
-		(&rawRecord{}).init(&Record{}),
+		(&rawRecordWithEtag{}).init(&Record{}),
 		consume.AppendTo(&records),
 		"select id, name, phone from records where name = ? order by id asc", "a"))
 
+	assert.Len(records, 2)
 	assert.Equal(int64(1), records[0].Id)
 	assert.Equal("a", records[0].Name)
 	assert.Equal("1", records[0].Phone)
@@ -59,6 +60,23 @@ func TestDatabase(t *testing.T) {
 	assert.Equal("a", records[1].Name)
 	assert.Equal("3", records[1].Phone)
 	assert.Equal(uint64(0), records[1].Etag)
+
+	records = records[:0]
+	assert.Nil(sqlite_rw.ReadMultipleWithEtag(
+		conn,
+		(&rawRecordWithEtag{}).init(&Record{}),
+		consume.AppendTo(&records),
+		"select id, name, phone from records where name = ? order by id asc", "a"))
+
+	assert.Len(records, 2)
+	assert.Equal(int64(1), records[0].Id)
+	assert.Equal("a", records[0].Name)
+	assert.Equal("1", records[0].Phone)
+	assert.NotEqual(uint64(0), records[0].Etag)
+	assert.Equal(int64(3), records[1].Id)
+	assert.Equal("a", records[1].Name)
+	assert.Equal("3", records[1].Phone)
+	assert.NotEqual(uint64(0), records[1].Etag)
 
 	noSuchId := errors.New("No such id")
 
