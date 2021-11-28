@@ -6,8 +6,6 @@ github.com/gorilla/securecookie v1.1.1 h1:miw7JPhV+b/lAHSXz4qd/nN9jRiAFV5FwjeKyC
 github.com/gorilla/securecookie v1.1.1/go.mod h1:ra0sb63/xPlUeL+yeDciTfxMRAA+MP+HVt/4epWDjd4=
 github.com/gorilla/sessions v1.2.1 h1:DHd3rPN5lE3Ts3D8rKkQ8x/0kqfeNmBAaiSi+o7FsgI=
 github.com/gorilla/sessions v1.2.1/go.mod h1:dk2InVEVJ0sfLlnXv9EAgkf6ecYs/i80K/zI+bUmuGM=
-github.com/keep94/consume v0.4.0 h1:JjClpcvXlCQFvLz54kVYYxxYnIOtUvRvBPzNxikBljQ=
-github.com/keep94/consume v0.4.0/go.mod h1:eXYAFW8AdRZWuJK6TRCMeYBDBRcggccBuqaDFLv6brQ=
 github.com/keep94/consume v0.5.0 h1:3DKU1UchKHSTsNWEGuS2N05REwMs5Ay/uWpZFtUHVrk=
 github.com/keep94/consume v0.5.0/go.mod h1:eXYAFW8AdRZWuJK6TRCMeYBDBRcggccBuqaDFLv6brQ=
 github.com/keep94/gosqlite v1.0.0 h1:wYAuan8F3qu/nfqllQTOg7fPlRQGXXc3Bw7mfo7JiyY=
