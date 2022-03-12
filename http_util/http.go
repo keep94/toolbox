@@ -7,6 +7,7 @@ import (
 	"html/template"
 	"io"
 	"log"
+	"mime/multipart"
 	"net/http"
 	"net/url"
 	"os"
@@ -255,6 +256,66 @@ func AddStaticFromFile(mux Mux, path, localPath string) error {
 // Error sends the status code along with its corresponding message
 func Error(w http.ResponseWriter, status int) {
 	http.Error(w, fmt.Sprintf("%d %s", status, http.StatusText(status)), status)
+}
+
+// MultipartFile represents a file in a multipart form.
+type MultipartFile struct {
+	FileName string
+	Contents []byte
+}
+
+// MultipartForm represents a multipart form
+type MultipartForm struct {
+	filesByKey map[string]MultipartFile
+}
+
+// NewMultipartForm creates a new MultipartForm. reader comes from calling
+// MultipartReader() on the http.Request valaue. maxSizes limits the sizes
+// of files. The keys are the http request keys; the values are the maximum
+// number of bytes to read. No value for a request key means no size limit
+// for that key.
+func NewMultipartForm(
+	reader *multipart.Reader, maxSizes map[string]int) (*MultipartForm, error) {
+	filesByKey := make(map[string]MultipartFile)
+	for part, err := reader.NextPart(); err != io.EOF; part, err = reader.NextPart() {
+		if err != nil {
+			return nil, err
+		}
+		formName := part.FormName()
+		var buffer bytes.Buffer
+		var reader io.Reader
+		maxSize, ok := maxSizes[formName]
+		if !ok {
+			reader = part
+		} else {
+			reader = &io.LimitedReader{R: part, N: int64(maxSize)}
+		}
+		_, err = buffer.ReadFrom(reader)
+		if err != nil {
+			return nil, err
+		}
+		filesByKey[formName] = MultipartFile{
+			FileName: part.FileName(),
+			Contents: buffer.Bytes(),
+		}
+		err = part.Close()
+		if err != nil {
+			return nil, err
+		}
+	}
+	return &MultipartForm{filesByKey: filesByKey}, nil
+}
+
+// Get gets the value for the request key.
+func (m *MultipartForm) Get(key string) string {
+	file := m.filesByKey[key]
+	return string(file.Contents)
+}
+
+// GetFile gets the file for the request key.
+func (m *MultipartForm) GetFile(key string) (file MultipartFile, ok bool) {
+	file, ok = m.filesByKey[key]
+	return
 }
 
 func init() {
