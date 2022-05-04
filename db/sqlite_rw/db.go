@@ -6,18 +6,15 @@ import (
 	"fmt"
 	"hash/fnv"
 
-	"github.com/keep94/consume"
+	"github.com/keep94/consume2"
 	"github.com/keep94/gosqlite/sqlite"
 	"github.com/keep94/toolbox/db/sqlite_db"
 )
 
-// RowForReading reads a database row into its business object.
+// RowForReading reads a single database row into its business object.
 // RowForReading instances can optionally implement EtagSetter if
 // its business object has an etag.
 type RowForReading interface {
-
-	// ValuePtr returns the pointer to this instance's business object.
-	ValuePtr() interface{}
 
 	// Ptrs returns the pointers to be passed to Scan to read the database row.
 	Ptrs() []interface{}
@@ -27,9 +24,19 @@ type RowForReading interface {
 	Unmarshall() error
 }
 
-// RowForReadingEtagSetter handles both reading rows and setting etags.
-type RowForReadingEtagSetter interface {
+// RowsForReading is for reading multiple rows.
+type RowsForReading[T any] interface {
 	RowForReading
+
+	// ValueRead returns the actual value of the business object just read
+	// from the last row.
+	ValueRead() T
+}
+
+// RowsForReadingEtagSetter handles both reading multiple rows and setting
+// etags.
+type RowsForReadingEtagSetter[T any] interface {
+	RowsForReading[T]
 	EtagSetter
 }
 
@@ -106,33 +113,33 @@ func FirstOnly(
 // ReadRows reads many rows from stmt. For each row read, ReadRows adds
 // row's business object to consumer. ReadRows does not set the etag in
 // business objects read even if row implements EtagSetter.
-func ReadRows(
-	row RowForReading,
+func ReadRows[T any](
+	row RowsForReading[T],
 	stmt *sqlite.Stmt,
-	consumer consume.Consumer) error {
+	consumer consume2.Consumer[T]) error {
 	return readRows(row, stmt, consumer, false)
 }
 
 // ReadRowsWithEtag works like ReadRows except it does set the etag in
 // business objects read.
-func ReadRowsWithEtag(
-	row RowForReadingEtagSetter,
+func ReadRowsWithEtag[T any](
+	row RowsForReadingEtagSetter[T],
 	stmt *sqlite.Stmt,
-	consumer consume.Consumer) error {
-	return readRows(row, stmt, consumer, true)
+	consumer consume2.Consumer[T]) error {
+	return readRows[T](row, stmt, consumer, true)
 }
 
-func readRows(
-	row RowForReading,
+func readRows[T any](
+	row RowsForReading[T],
 	stmt *sqlite.Stmt,
-	consumer consume.Consumer,
+	consumer consume2.Consumer[T],
 	setEtag bool) error {
 	ptrs := row.Ptrs()
 	for stmt.Next() && consumer.CanConsume() {
 		if err := readRow(row, stmt, ptrs, setEtag); err != nil {
 			return err
 		}
-		consumer.Consume(row.ValuePtr())
+		consumer.Consume(row.ValueRead())
 	}
 	return nil
 }
@@ -142,10 +149,10 @@ func readRows(
 // values for question mark (?) place holders in sql. ReadMultiple does
 // not set the etag in business objects read even if row implements
 // EtagSetter.
-func ReadMultiple(
+func ReadMultiple[T any](
 	conn *sqlite.Conn,
-	row RowForReading,
-	consumer consume.Consumer,
+	row RowsForReading[T],
+	consumer consume2.Consumer[T],
 	sql string,
 	params ...interface{}) error {
 	stmt, err := conn.Prepare(sql)
@@ -161,10 +168,10 @@ func ReadMultiple(
 
 // ReadMultipleWithEtag works like ReadMultiple, but it also computes
 // etags for fetched rows.
-func ReadMultipleWithEtag(
+func ReadMultipleWithEtag[T any](
 	conn *sqlite.Conn,
-	row RowForReadingEtagSetter,
-	consumer consume.Consumer,
+	row RowsForReadingEtagSetter[T],
+	consumer consume2.Consumer[T],
 	sql string,
 	params ...interface{}) error {
 	stmt, err := conn.Prepare(sql)
@@ -175,7 +182,7 @@ func ReadMultipleWithEtag(
 	if err = stmt.Exec(params...); err != nil {
 		return err
 	}
-	return readRows(row, stmt, consumer, true)
+	return readRows[T](row, stmt, consumer, true)
 }
 
 // AddRow adds row's business object as a new row in database.

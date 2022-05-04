@@ -2,7 +2,7 @@ package sqlite_rw_test
 
 import (
 	"errors"
-	"github.com/keep94/consume"
+	"github.com/keep94/consume2"
 	"github.com/keep94/gosqlite/sqlite"
 	"github.com/keep94/toolbox/db/sqlite_rw"
 	"github.com/stretchr/testify/assert"
@@ -45,10 +45,10 @@ func TestDatabase(t *testing.T) {
 
 	var records []Record
 
-	assert.Nil(sqlite_rw.ReadMultiple(
+	assert.Nil(sqlite_rw.ReadMultiple[Record](
 		conn,
 		(&rawRecordWithEtag{}).init(&Record{}),
-		consume.AppendTo(&records),
+		consume2.AppendTo(&records),
 		"select id, name, phone from records where name = ? order by id asc", "a"))
 
 	assert.Len(records, 2)
@@ -62,10 +62,10 @@ func TestDatabase(t *testing.T) {
 	assert.Equal(uint64(0), records[1].Etag)
 
 	records = records[:0]
-	assert.Nil(sqlite_rw.ReadMultipleWithEtag(
+	assert.Nil(sqlite_rw.ReadMultipleWithEtag[Record](
 		conn,
 		(&rawRecordWithEtag{}).init(&Record{}),
-		consume.AppendTo(&records),
+		consume2.AppendTo(&records),
 		"select id, name, phone from records where name = ? order by id asc", "a"))
 
 	assert.Len(records, 2)
@@ -131,10 +131,10 @@ func TestDatabase(t *testing.T) {
 	assert.Equal("1234", secondRecord.Phone)
 	assert.NotEqual(secondEtag, secondRecord.Etag)
 
-	assert.NotNil(sqlite_rw.ReadMultiple(
+	assert.NotNil(sqlite_rw.ReadMultiple[Record](
 		conn,
 		(&errorRecord{}).init(&Record{}),
-		consume.AppendTo(&records),
+		consume2.AppendTo(&records),
 		"select id, name, phone from records"))
 
 	assert.NotNil(sqlite_rw.AddRow(
@@ -174,8 +174,8 @@ func (r *rawRecord) Ptrs() []interface{} {
 	return []interface{}{&r.Id, &r.Name, &r.Phone}
 }
 
-func (r *rawRecord) ValuePtr() interface{} {
-	return r.Record
+func (r *rawRecord) ValueRead() Record {
+	return *r.Record
 }
 
 func (r *rawRecord) Values() []interface{} {
@@ -212,8 +212,8 @@ func (e *errorRecord) Values() []interface{} {
 	return []interface{}{e.Name, e.Phone, e.Id}
 }
 
-func (e *errorRecord) ValuePtr() interface{} {
-	return e.Record
+func (e *errorRecord) ValueRead() Record {
+	return *e.Record
 }
 
 func (e *errorRecord) Marshall() error {
