@@ -3,9 +3,9 @@ package session_util_test
 import (
 	"errors"
 	"fmt"
-	"github.com/gorilla/context"
-	"github.com/gorilla/sessions"
+	"github.com/keep94/context"
 	"github.com/keep94/ramstore"
+	"github.com/keep94/sessions"
 	"github.com/keep94/toolbox/session_util"
 	"net/http"
 	"strconv"
