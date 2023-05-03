@@ -14,6 +14,8 @@ github.com/keep94/sessions v0.1.0 h1:sKY/ZVox4+SBTfwGnZ54zeLPCUI3HfGqT/w4sFXzHEI
 github.com/keep94/sessions v0.1.0/go.mod h1:xV8BxgCZFYA8E1+kaO5jMVI8x+/wr5Qe+M4rhaCgmj4=
 github.com/keep94/weblogs v1.0.1 h1:sEN2JFqTPkc6BkCxwCKNXQuzh2h8eHLDLiCH2/KMWmM=
 github.com/keep94/weblogs v1.0.1/go.mod h1:bYHO1S7UhVcPkoDjKAJTuCdSXoVdcv1n1I09kYlBKwE=
+github.com/mattn/go-sqlite3 v1.14.16 h1:yOQRA0RpS5PFz/oikGwBEqvAWhWg5ufRz4ETLjwpU1Y=
+github.com/mattn/go-sqlite3 v1.14.16/go.mod h1:2eHXhiwb8IkHr+BDWZGa96P6+rkvnG63S2DGjv9HUNg=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=

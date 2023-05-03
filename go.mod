@@ -9,6 +9,7 @@ require (
 	github.com/keep94/ramstore v1.0.1
 	github.com/keep94/sessions v0.1.0
 	github.com/keep94/weblogs v1.0.1
+	github.com/mattn/go-sqlite3 v1.14.16
 	github.com/stretchr/testify v1.7.0
 	golang.org/x/crypto v0.0.0-20200820211705-5c72a883971a
 )
