@@ -5,7 +5,6 @@ go 1.18
 require (
 	github.com/keep94/consume2 v0.6.0
 	github.com/keep94/context v0.1.0
-	github.com/keep94/gosqlite v1.0.0
 	github.com/keep94/ramstore v1.0.1
 	github.com/keep94/sessions v0.1.0
 	github.com/keep94/weblogs v1.0.1

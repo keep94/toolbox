@@ -4,8 +4,6 @@ github.com/keep94/consume2 v0.6.0 h1:fjJYlyBAn25rSPnoutjvadUri6U4BddN39ZuuofhmEw
 github.com/keep94/consume2 v0.6.0/go.mod h1:oI2GS5jRbaWtXBO3wLiqr+dHpNmEyOgAJd4C1Jxp9o0=
 github.com/keep94/context v0.1.0 h1:FecPv0geuWcdf+8nRmF5RnF6Sk2ahy26jFt7uRivmUw=
 github.com/keep94/context v0.1.0/go.mod h1:IXF7ZIYvKxmGCPiN5tJYbhv5AWaxIDclpOQHuzJsxLI=
-github.com/keep94/gosqlite v1.0.0 h1:wYAuan8F3qu/nfqllQTOg7fPlRQGXXc3Bw7mfo7JiyY=
-github.com/keep94/gosqlite v1.0.0/go.mod h1:hTK4m/OcNf4Lp7HTQFwhGrRn81oSBI+xf5t5zx5r3Pg=
 github.com/keep94/ramstore v1.0.1 h1:ufM7kaWgoTV9Ij92iN4CpHfdOL1R+Z5FvyGJMz5AFqA=
 github.com/keep94/ramstore v1.0.1/go.mod h1:iEZtZc+1ktqIOiURQTr3kGtvtGJqWaIBzDNtMgmSyxw=
 github.com/keep94/securecookie v0.1.1 h1:mE0byVoxSWXByR+RroDw2o9nM84W4cDM5IqioOSHw1o=
