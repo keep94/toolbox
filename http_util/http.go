@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"os"
 	"strconv"
+	ttemplate "text/template"
 	"time"
 )
 
@@ -114,6 +115,14 @@ func (p *PageBreadCrumb) PrevPageLink() *url.URL {
 
 // WriteTemplate writes a template. v is the values for the template.
 func WriteTemplate(w io.Writer, t *template.Template, v interface{}) {
+	if err := t.Execute(w, v); err != nil {
+		fmt.Fprintln(w, "Error in template.")
+		kLog.Printf("Error in template: %v\n", err)
+	}
+}
+
+// WriteTextTemplate writes a text template. v is the values for the template.
+func WriteTextTemplate(w io.Writer, t *ttemplate.Template, v interface{}) {
 	if err := t.Execute(w, v); err != nil {
 		fmt.Fprintln(w, "Error in template.")
 		kLog.Printf("Error in template: %v\n", err)
