@@ -3,6 +3,7 @@ package google_jsgraph
 
 import (
 	"html/template"
+	"io"
 	"regexp"
 	"sort"
 	"strings"
@@ -56,12 +57,12 @@ type GraphData interface {
 // Graph represents a Google javascript graph
 type Graph interface {
 
-	// Emits the package names this graph depends on to the packages map.
-	EmitPackages(packages map[string]struct{})
+	// Packages returns the Google javascript packages this graph depends on
+	Packages() []string
 
-	// Emits the the code within the drawCharts() function that draws this
-	// graph.
-	EmitCode(name string, sb *strings.Builder)
+	// WriteCode writes the code within the drawCharts() function that draws
+	// this graph. name is the id of the div tag where this graph will go.
+	WriteCode(name string, w io.Writer)
 }
 
 // MustEmit emits the javascript chunk that renders the graphs.
@@ -81,13 +82,15 @@ func MustEmit(graphs map[string]Graph) template.HTML {
 	var code strings.Builder
 	packages := make(map[string]struct{})
 	for _, name := range names {
-		graphs[name].EmitPackages(packages)
+		for _, p := range graphs[name].Packages() {
+			packages[p] = struct{}{}
+		}
 	}
 	for _, name := range names {
 		if !isValidName(name) {
 			panic("Names must match [a-z0-9]+")
 		}
-		graphs[name].EmitCode(name, &code)
+		graphs[name].WriteCode(name, &code)
 	}
 	v := &view{
 		Packages: packagesAsString(packages),

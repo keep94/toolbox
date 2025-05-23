@@ -2,6 +2,7 @@ package google_jsgraph
 
 import (
 	"fmt"
+	"io"
 	"strings"
 	"text/template"
 
@@ -38,11 +39,11 @@ type PieGraph struct {
 	Palette []string
 }
 
-func (p *PieGraph) EmitPackages(packages map[string]struct{}) {
-	packages["corechart"] = struct{}{}
+func (p *PieGraph) Packages() []string {
+	return []string{"corechart"}
 }
 
-func (p *PieGraph) EmitCode(name string, sb *strings.Builder) {
+func (p *PieGraph) WriteCode(name string, w io.Writer) {
 	v := &pieview{
 		Data:       asJSArray(p.Data),
 		DataVar:    "data_" + name,
@@ -51,7 +52,7 @@ func (p *PieGraph) EmitCode(name string, sb *strings.Builder) {
 		Name:       name,
 		Colors:     p.paletteString(),
 	}
-	http_util.WriteTextTemplate(sb, kPieGraphTemplate, v)
+	http_util.WriteTextTemplate(w, kPieGraphTemplate, v)
 }
 
 func (p *PieGraph) paletteString() string {

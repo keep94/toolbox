@@ -1,6 +1,7 @@
 package google_jsgraph
 
 import (
+	"io"
 	"strings"
 	"testing"
 
@@ -134,7 +135,7 @@ chart_piegraph.draw(data_piegraph, options_piegraph)
 	}
 	pg := &PieGraph{Data: piedata}
 	var sb strings.Builder
-	pg.EmitCode("piegraph", &sb)
+	pg.WriteCode("piegraph", &sb)
 	assert.Equal(t, expected, sb.String())
 }
 
@@ -157,23 +158,21 @@ func (f *fakeGraphData) Value(x, y int) float64 {
 type barGraphForTesting struct {
 }
 
-func (b barGraphForTesting) EmitPackages(packages map[string]struct{}) {
-	packages["bar"] = struct{}{}
-	packages["baz"] = struct{}{}
+func (b barGraphForTesting) Packages() []string {
+	return []string{"bar", "baz"}
 }
 
-func (b barGraphForTesting) EmitCode(name string, sb *strings.Builder) {
-	sb.WriteString("Bar graph code\n\n")
+func (b barGraphForTesting) WriteCode(name string, w io.Writer) {
+	io.WriteString(w, "Bar graph code\n\n")
 }
 
 type pieGraphForTesting struct {
 }
 
-func (p pieGraphForTesting) EmitPackages(packages map[string]struct{}) {
-	packages["foo"] = struct{}{}
-	packages["bar"] = struct{}{}
+func (p pieGraphForTesting) Packages() []string {
+	return []string{"foo", "bar"}
 }
 
-func (p pieGraphForTesting) EmitCode(name string, sb *strings.Builder) {
-	sb.WriteString("Pie graph code\n\n")
+func (p pieGraphForTesting) WriteCode(name string, w io.Writer) {
+	io.WriteString(w, "Pie graph code\n\n")
 }

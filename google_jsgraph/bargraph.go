@@ -1,7 +1,7 @@
 package google_jsgraph
 
 import (
-	"strings"
+	"io"
 	"text/template"
 
 	"github.com/keep94/toolbox/http_util"
@@ -36,11 +36,11 @@ type BarGraph struct {
 	Palette []string
 }
 
-func (b *BarGraph) EmitPackages(packages map[string]struct{}) {
-	packages["bar"] = struct{}{}
+func (b *BarGraph) Packages() []string {
+	return []string{"bar"}
 }
 
-func (b *BarGraph) EmitCode(name string, sb *strings.Builder) {
+func (b *BarGraph) WriteCode(name string, w io.Writer) {
 	v := &barview{
 		Data:       asJSArray(b.Data),
 		DataVar:    "data_" + name,
@@ -49,7 +49,7 @@ func (b *BarGraph) EmitCode(name string, sb *strings.Builder) {
 		Name:       name,
 		Colors:     b.paletteString(),
 	}
-	http_util.WriteTextTemplate(sb, kBarGraphTemplate, v)
+	http_util.WriteTextTemplate(w, kBarGraphTemplate, v)
 }
 
 func (b *BarGraph) paletteString() string {
