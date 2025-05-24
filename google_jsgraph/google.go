@@ -62,6 +62,7 @@ type Graph interface {
 
 	// WriteCode writes the code within the drawCharts() function that draws
 	// this graph. name is the id of the div tag where this graph will go.
+	// Calling Write on w must always return len(p), nil.
 	WriteCode(name string, w io.Writer)
 }
 
