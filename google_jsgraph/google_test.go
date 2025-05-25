@@ -42,6 +42,29 @@ func TestMustEmitEmpty(t *testing.T) {
 	assert.Empty(t, MustEmit(nil))
 }
 
+func TestTypeAssertionFails(t *testing.T) {
+	expected := `
+<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+<script type="text/javascript">
+  google.charts.load("current", {packages:[]});
+  google.charts.setOnLoadCallback(drawCharts);
+  function drawCharts() {
+Builder Failure
+
+ByteWriter Success
+
+StringWriter Success
+
+
+  }
+</script>
+`
+	chunk := MustEmit(map[string]Graph{
+		"typeassertiongraph": typeAssertionGraph{},
+	})
+	assert.Equal(t, expected, string(chunk))
+}
+
 func TestRealGraphs(t *testing.T) {
 	expected := `
 <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
@@ -175,4 +198,34 @@ func (p pieGraphForTesting) Packages() []string {
 
 func (p pieGraphForTesting) WriteCode(name string, w io.Writer) {
 	io.WriteString(w, "Pie graph code\n\n")
+}
+
+type typeAssertionGraph struct {
+}
+
+func (t typeAssertionGraph) Packages() []string {
+	return nil
+}
+
+func (t typeAssertionGraph) WriteCode(name string, w io.Writer) {
+	_, ok := w.(*strings.Builder)
+	if ok {
+		io.WriteString(w, "Builder Success\n\n")
+	} else {
+		io.WriteString(w, "Builder Failure\n\n")
+	}
+
+	_, ok = w.(io.ByteWriter)
+	if ok {
+		io.WriteString(w, "ByteWriter Success\n\n")
+	} else {
+		io.WriteString(w, "ByteWriter Failure\n\n")
+	}
+
+	_, ok = w.(io.StringWriter)
+	if ok {
+		io.WriteString(w, "StringWriter Success\n\n")
+	} else {
+		io.WriteString(w, "StringWriter Failure\n\n")
+	}
 }

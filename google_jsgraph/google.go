@@ -63,6 +63,8 @@ type Graph interface {
 	// WriteCode writes the code within the drawCharts() function that draws
 	// this graph. name is the id of the div tag where this graph will go.
 	// Calling Write on w must always return len(p), nil.
+	// When MustEmit calls this, it provides a w that also implements
+	// io.ByteWriter and io.StringWriter.
 	WriteCode(name string, w io.Writer)
 }
 
@@ -81,6 +83,7 @@ func MustEmit(graphs map[string]Graph) template.HTML {
 	sort.Strings(names)
 
 	var code strings.Builder
+	opqCode := &opqBuilder{delegate: &code}
 	packages := make(map[string]struct{})
 	for _, name := range names {
 		for _, p := range graphs[name].Packages() {
@@ -91,7 +94,7 @@ func MustEmit(graphs map[string]Graph) template.HTML {
 		if !isValidName(name) {
 			panic("Names must match [a-z0-9]+")
 		}
-		graphs[name].WriteCode(name, &code)
+		graphs[name].WriteCode(name, opqCode)
 	}
 	v := &view{
 		Packages: packagesAsString(packages),
@@ -100,6 +103,22 @@ func MustEmit(graphs map[string]Graph) template.HTML {
 	var sb strings.Builder
 	http_util.WriteTemplate(&sb, kGoogleGraphTemplate, v)
 	return template.HTML(sb.String())
+}
+
+type opqBuilder struct {
+	delegate *strings.Builder
+}
+
+func (b *opqBuilder) Write(p []byte) (int, error) {
+	return b.delegate.Write(p)
+}
+
+func (b *opqBuilder) WriteByte(c byte) error {
+	return b.delegate.WriteByte(c)
+}
+
+func (b *opqBuilder) WriteString(s string) (int, error) {
+	return b.delegate.WriteString(s)
 }
 
 type view struct {
