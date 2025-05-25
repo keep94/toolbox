@@ -55,8 +55,7 @@ ByteWriter Success
 
 StringWriter Success
 
-
-
+A
   }
 </script>
 `
@@ -230,5 +229,5 @@ func (t typeAssertionGraph) WriteCode(name string, w io.Writer) {
 		io.WriteString(w, "StringWriter Failure\n\n")
 	}
 	bw := w.(io.ByteWriter)
-	bw.WriteByte(10)
+	bw.WriteByte(0x41) // A
 }
