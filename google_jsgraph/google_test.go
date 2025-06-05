@@ -1,6 +1,7 @@
 package google_jsgraph
 
 import (
+	"errors"
 	"io"
 	"strings"
 	"testing"
@@ -34,6 +35,14 @@ func TestMustEmitPanics(t *testing.T) {
 	assert.Panics(t, func() {
 		MustEmit(map[string]Graph{
 			"bar_graph": barGraphForTesting{},
+		})
+	})
+}
+
+func TestMustEmitPanicsFromError(t *testing.T) {
+	assert.Panics(t, func() {
+		MustEmit(map[string]Graph{
+			"error": errorGraphForTesting{},
 		})
 	})
 }
@@ -178,6 +187,17 @@ func (f *fakeGraphData) Value(x, y int) float64 {
 	return f.values[x*f.YLen()+y]
 }
 
+type errorGraphForTesting struct {
+}
+
+func (b errorGraphForTesting) Packages() []string {
+	return nil
+}
+
+func (b errorGraphForTesting) WriteCode(name string, w io.Writer) error {
+	return errors.New("Error!")
+}
+
 type barGraphForTesting struct {
 }
 
@@ -185,8 +205,9 @@ func (b barGraphForTesting) Packages() []string {
 	return []string{"bar", "baz"}
 }
 
-func (b barGraphForTesting) WriteCode(name string, w io.Writer) {
-	io.WriteString(w, "Bar graph code\n\n")
+func (b barGraphForTesting) WriteCode(name string, w io.Writer) error {
+	_, err := io.WriteString(w, "Bar graph code\n\n")
+	return err
 }
 
 type pieGraphForTesting struct {
@@ -196,8 +217,9 @@ func (p pieGraphForTesting) Packages() []string {
 	return []string{"foo", "bar"}
 }
 
-func (p pieGraphForTesting) WriteCode(name string, w io.Writer) {
-	io.WriteString(w, "Pie graph code\n\n")
+func (p pieGraphForTesting) WriteCode(name string, w io.Writer) error {
+	_, err := io.WriteString(w, "Pie graph code\n\n")
+	return err
 }
 
 type typeAssertionGraph struct {
@@ -207,27 +229,39 @@ func (t typeAssertionGraph) Packages() []string {
 	return nil
 }
 
-func (t typeAssertionGraph) WriteCode(name string, w io.Writer) {
+func (t typeAssertionGraph) WriteCode(name string, w io.Writer) error {
 	_, ok := w.(*strings.Builder)
 	if ok {
-		io.WriteString(w, "Builder Success\n\n")
+		if _, err := io.WriteString(w, "Builder Success\n\n"); err != nil {
+			return err
+		}
 	} else {
-		io.WriteString(w, "Builder Failure\n\n")
+		if _, err := io.WriteString(w, "Builder Failure\n\n"); err != nil {
+			return err
+		}
 	}
 
 	_, ok = w.(io.ByteWriter)
 	if ok {
-		io.WriteString(w, "ByteWriter Success\n\n")
+		if _, err := io.WriteString(w, "ByteWriter Success\n\n"); err != nil {
+			return err
+		}
 	} else {
-		io.WriteString(w, "ByteWriter Failure\n\n")
+		if _, err := io.WriteString(w, "ByteWriter Failure\n\n"); err != nil {
+			return err
+		}
 	}
 
 	_, ok = w.(io.StringWriter)
 	if ok {
-		io.WriteString(w, "StringWriter Success\n\n")
+		if _, err := io.WriteString(w, "StringWriter Success\n\n"); err != nil {
+			return err
+		}
 	} else {
-		io.WriteString(w, "StringWriter Failure\n\n")
+		if _, err := io.WriteString(w, "StringWriter Failure\n\n"); err != nil {
+			return err
+		}
 	}
 	bw := w.(io.ByteWriter)
-	bw.WriteByte(0x41) // A
+	return bw.WriteByte(0x41) // A
 }

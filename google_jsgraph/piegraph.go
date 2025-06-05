@@ -5,8 +5,6 @@ import (
 	"io"
 	"strings"
 	"text/template"
-
-	"github.com/keep94/toolbox/http_util"
 )
 
 var (
@@ -43,7 +41,7 @@ func (p *PieGraph) Packages() []string {
 	return []string{"corechart"}
 }
 
-func (p *PieGraph) WriteCode(name string, w io.Writer) {
+func (p *PieGraph) WriteCode(name string, w io.Writer) error {
 	v := &pieview{
 		Data:       asJSArray(p.Data),
 		DataVar:    "data_" + name,
@@ -52,7 +50,7 @@ func (p *PieGraph) WriteCode(name string, w io.Writer) {
 		Name:       name,
 		Colors:     p.paletteString(),
 	}
-	http_util.WriteTextTemplate(w, kPieGraphTemplate, v)
+	return kPieGraphTemplate.Execute(w, v)
 }
 
 func (p *PieGraph) paletteString() string {

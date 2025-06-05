@@ -3,8 +3,6 @@ package google_jsgraph
 import (
 	"io"
 	"text/template"
-
-	"github.com/keep94/toolbox/http_util"
 )
 
 var (
@@ -40,7 +38,7 @@ func (b *BarGraph) Packages() []string {
 	return []string{"bar"}
 }
 
-func (b *BarGraph) WriteCode(name string, w io.Writer) {
+func (b *BarGraph) WriteCode(name string, w io.Writer) error {
 	v := &barview{
 		Data:       asJSArray(b.Data),
 		DataVar:    "data_" + name,
@@ -49,7 +47,7 @@ func (b *BarGraph) WriteCode(name string, w io.Writer) {
 		Name:       name,
 		Colors:     b.paletteString(),
 	}
-	http_util.WriteTextTemplate(w, kBarGraphTemplate, v)
+	return kBarGraphTemplate.Execute(w, v)
 }
 
 func (b *BarGraph) paletteString() string {

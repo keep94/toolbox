@@ -2,13 +2,12 @@
 package google_jsgraph
 
 import (
+	"errors"
 	"html/template"
 	"io"
 	"regexp"
 	"sort"
 	"strings"
-
-	"github.com/keep94/toolbox/http_util"
 )
 
 var (
@@ -62,19 +61,28 @@ type Graph interface {
 
 	// WriteCode writes the code within the drawCharts() function that draws
 	// this graph. name is the id of the div tag where this graph will go.
-	// Calling Write on w must always return len(p), nil.
-	// When MustEmit calls this, it provides a w that also implements
+	// When Emit or MustEmit calls this, it provides a w that also implements
 	// io.ByteWriter and io.StringWriter.
-	WriteCode(name string, w io.Writer)
+	WriteCode(name string, w io.Writer) error
 }
 
-// MustEmit emits the javascript chunk that renders the graphs.
-// In graphs, the keys are the ids of the div tags where the graphs go.
-// The keys must match [a-z0-9]+ or else MustEmit panics. The return value
-// of MustEmit belongs in the head section of the html document.
+// MustEmit works like Emit except that when Emit returns an error, MustEmit
+// panics.
 func MustEmit(graphs map[string]Graph) template.HTML {
+	result, err := Emit(graphs)
+	if err != nil {
+		panic(err)
+	}
+	return result
+}
+
+// Emit emits the javascript chunk that renders the graphs.
+// In graphs, the keys are the ids of the div tags where the graphs go.
+// The keys must match [a-z0-9]+ or else Emit returns an error. The
+// return value of Emit belongs in the head section of the html document.
+func Emit(graphs map[string]Graph) (template.HTML, error) {
 	if len(graphs) == 0 {
-		return ""
+		return "", nil
 	}
 	names := make([]string, 0, len(graphs))
 	for n := range graphs {
@@ -92,17 +100,21 @@ func MustEmit(graphs map[string]Graph) template.HTML {
 	}
 	for _, name := range names {
 		if !isValidName(name) {
-			panic("Names must match [a-z0-9]+")
+			return "", errors.New("Names must match [a-z0-9]+")
 		}
-		graphs[name].WriteCode(name, opqCode)
+		if err := graphs[name].WriteCode(name, opqCode); err != nil {
+			return "", err
+		}
 	}
 	v := &view{
 		Packages: packagesAsString(packages),
 		Code:     template.JS(code.String()),
 	}
 	var sb strings.Builder
-	http_util.WriteTemplate(&sb, kGoogleGraphTemplate, v)
-	return template.HTML(sb.String())
+	if err := kGoogleGraphTemplate.Execute(&sb, v); err != nil {
+		return "", err
+	}
+	return template.HTML(sb.String()), nil
 }
 
 type opqBuilder struct {
