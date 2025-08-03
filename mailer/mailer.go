@@ -9,6 +9,26 @@ import (
 	"time"
 )
 
+// Option represents an option for the NewWithOptions method.
+type Option interface {
+	mutate(m *mailerSettings)
+}
+
+// SendWaitTime sets the time to wait between email sends.
+func SendWaitTime(timeToWait time.Duration) Option {
+	return optionFunc(func(m *mailerSettings) {
+		m.SendWaitTime = timeToWait
+	})
+}
+
+// BufferSize sets the maximum number of pending emails before Send or
+// SendFuture block.
+func BufferSize(bufferSize int) Option {
+	return optionFunc(func(m *mailerSettings) {
+		m.BufferSize = bufferSize
+	})
+}
+
 // Email represents a single email.
 type Email struct {
 	To      []string
@@ -30,13 +50,31 @@ type Mailer struct {
 }
 
 // New creates a new instance. emailId and password are the gmail
-// sender address and password respectively.
+// sender address and password respectively. The created Mailer has a
+// buffer size of 100 and a send wait time of 1s.
 func New(emailId, password string) *Mailer {
+	return NewWithOptions(emailId, password)
+}
+
+// NewWithOptions works like New, but allows creation to be configured with
+// options. The defaults for each option are the same as New.
+func NewWithOptions(emailId, password string, options ...Option) *Mailer {
+	settings := mailerSettings{
+		BufferSize:   100,
+		SendWaitTime: time.Second,
+	}
+	mutateSettings(options, &settings)
+	var emailCh chan *emailJob
+	if settings.BufferSize > 0 {
+		emailCh = make(chan *emailJob, settings.BufferSize)
+	} else {
+		emailCh = make(chan *emailJob)
+	}
 	result := &Mailer{
-		emailCh:  make(chan *emailJob, 100),
+		emailCh:  emailCh,
 		emailId:  emailId,
 		password: password,
-		pause:    time.Second,
+		pause:    settings.SendWaitTime,
 		done:     make(chan struct{}),
 	}
 	go result.loop()
@@ -86,7 +124,9 @@ func (m *Mailer) loop() {
 		err := smtp.SendMail(
 			"smtp.gmail.com:587", auth, m.emailId, emailJob.To, []byte(msg))
 		emailJob.SetResponse(err)
-		time.Sleep(m.pause)
+		if m.pause > 0 {
+			time.Sleep(m.pause)
+		}
 	}
 	close(m.done)
 }
@@ -99,4 +139,21 @@ type emailJob struct {
 func (e *emailJob) SetResponse(err error) {
 	e.Response <- err
 	close(e.Response)
+}
+
+type mailerSettings struct {
+	SendWaitTime time.Duration
+	BufferSize   int
+}
+
+type optionFunc func(m *mailerSettings)
+
+func (o optionFunc) mutate(m *mailerSettings) {
+	o(m)
+}
+
+func mutateSettings(options []Option, settings *mailerSettings) {
+	for _, option := range options {
+		option.mutate(settings)
+	}
 }
